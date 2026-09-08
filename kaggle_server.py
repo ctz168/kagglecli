@@ -182,11 +182,16 @@ def _interrupt_thread(thread):
         try:
             thread_id = thread.ident
             if thread_id:
-                exc = KeyboardInterrupt()
-                ctypes.pythonapi.PyThreadState_SetAsyncExc(
-                    ctypes.c_long(thread_id),
-                    ctypes.py_object(exc)
+                # 注入异常"类"（而非实例）：CPython 3.12 对实例会报
+                # SystemError: _PyErr_SetObject ... not a BaseException subclass
+                ret = ctypes.pythonapi.PyThreadState_SetAsyncExc(
+                    ctypes.c_ulong(thread_id),
+                    ctypes.py_object(KeyboardInterrupt)
                 )
+                if ret != 1:
+                    # 0=thread not found, >1=error; interrupt flag stays set,
+                    # the output-write checkpoint is the fallback
+                    print(f"[Interrupt] SetAsyncExc returned {ret} (1=ok)", flush=True)
         except Exception as e:
             print(t('interrupt_attempt_failed', error=str(e)), flush=True)
     return True
@@ -272,6 +277,16 @@ def interrupt_execution():
         return jsonify({"success": True, "message": t('no_running_task')})
 
     interrupt_requested = True
+
+    # Stream 模式下立即通知 SSE 客户端并结束流：
+    # 执行线程可能阻塞在 C 调用（time.sleep/网络）里，SetAsyncExc 只能等阻塞
+    # 返回后才注入异常，客户端不该陪等——连接先断，线程稍后自然结束。
+    if stream_active:
+        try:
+            stream_output_queue.put({"type": "error", "content": t('execution_interrupted_msg')})
+            stream_output_queue.put(None)  # SSE 结束信号
+        except Exception:
+            pass
 
     if current_execution_thread and current_execution_thread.is_alive():
         success = _interrupt_thread(current_execution_thread)
@@ -434,7 +449,7 @@ def execute_code_stream():
     1. shell 命令 (!cmd) - 使用 Popen 实时读取
     2. Python 代码 - 使用线程实时推送 stdout
     """
-    global stream_output_queue, stream_active, interrupt_requested
+    global stream_output_queue, stream_active, interrupt_requested, current_execution_thread
 
     def generate_sse(output_queue):
         """SSE 生成器"""
@@ -541,6 +556,7 @@ def execute_code_stream():
                 execution_state["is_executing"] = False
 
         thread = threading.Thread(target=run_shell_command, daemon=True)
+        current_execution_thread = thread
         thread.start()
 
     # 情况2: Python 代码执行
@@ -554,6 +570,9 @@ def execute_code_stream():
 
             def write(self, text):
                 if text:
+                    # 周期性中断检查点：有输出的长循环可被 /interrupt 打断
+                    if interrupt_requested:
+                        raise KeyboardInterrupt(t('execution_interrupted'))
                     self.buffer.append(text)
                     self.queue.put({"type": self.stream_type, "content": text})
 
@@ -622,6 +641,7 @@ def execute_code_stream():
                 execution_state["is_executing"] = False
 
         thread = threading.Thread(target=run_python_code, daemon=True)
+        current_execution_thread = thread
         thread.start()
 
     return Response(generate_sse(stream_output_queue), mimetype='text/event-stream')
