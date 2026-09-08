@@ -1,9 +1,11 @@
 # 🚀 KaggleCLI
 
-[![Kaggle](https://img.shields.io/badge/Run%20on-Kaggle-20BEFF?logo=kaggle&logoColor=white)](https://www.kaggle.com/code)
+[![Open In Kaggle](https://img.shields.io/badge/Open%20in%20Kaggle-20BEFF?logo=kaggle&logoColor=white)](https://www.kaggle.com/code/new)
 [![GitHub](https://img.shields.io/badge/GitHub-ctz168%2Fkagglecli-blue?logo=github)](https://github.com/ctz168/kagglecli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](https://github.com/ctz168/kagglecli)
+
+🌐 [English](README.md) | **中文**
 
 一个强大的命令行工具，用于运行 Jupyter Notebook（`.ipynb`），支持**逐 cell 流式输出**，以及针对长时间运行任务的**实时 SSE 流式**功能。
 
@@ -13,12 +15,13 @@
 
 ### 1. 在 Kaggle 上部署服务器
 
-Kaggle 不支持像 Colab 那样的一键打开徽章，需要手动导入服务器 Notebook：
+点击上方 **Open in Kaggle** 徽章（或直接打开 [kaggle.com/code/new](https://www.kaggle.com/code/new)）—— Kaggle 会一键为你创建一个全新 Notebook，然后把服务器 Notebook 导入即可：
 
-1. 从本仓库下载 [`kaggle_server.ipynb`](kaggle_server.ipynb)
-2. 在 Kaggle 上：**Create → New Notebook → File → Import Notebook** 上传该文件
-3. 在 Notebook **Settings** 中：开启 **Internet → ON**（需要已验证手机号的账号）；可选选择 **GPU 加速器**（T4 x2 / P100）
-4. 点击 **Run All（运行全部）** — Cell 3 会输出公网 URL，例如 `https://xxxx.aitun.cc/xxxx`
+1. 点击徽章 → 你的账号下会新建一个 Kaggle Notebook
+2. **File → Import Notebook → GitHub** 标签页 → 选择仓库 `ctz168/kagglecli` → 文件 `kaggle_server.ipynb`
+   *（或者：下载 [`kaggle_server.ipynb`](kaggle_server.ipynb) 后用 **File → Import Notebook → Upload file** 上传）*
+3. 在 Notebook 右侧 **Settings** 中：开启 **Internet → ON**（需要已验证手机号的账号）；可选选择 **GPU 加速器**（T4 x2 / P100）
+4. 点击 **Run All（运行全部）** — 隧道 cell 会输出公网 URL，例如 `https://xxxx.aitun.cc/xxxx`
 5. 保持 Notebook 页面打开（保活循环会自动维持会话）
 
 ### 2. 本地安装 CLI
@@ -68,6 +71,10 @@ kagglemcp stream notebook.ipynb --url https://aitun.cc/your-code
 ---
 
 ## 📦 安装
+
+> 💡 CLI 安装在**你自己的电脑**上 —— Kaggle Notebook 只需要运行服务端（它会自动安装自己的依赖）。
+>
+> ⚠️ **如果要在 Kaggle Notebook 里安装？** 必须先在右侧 Settings 面板开启 **Internet → ON**，否则 pip 会报错 `Could not resolve host: github.com`。参见[常见问题排查](#️-常见问题排查)。
 
 ### 从 GitHub 安装
 
@@ -747,6 +754,30 @@ fi
 3. **复制公网 URL**，并与 `kagglemcp remote` 或 `kagglemcp stream` 一起使用
 
 > ⚠️ **Kaggle 会话限制**：CPU 会话最长 **12 小时**，GPU 会话最长 **9 小时**（每周 GPU 配额约 30 小时）。会话存活期间隧道 URL 有效。保存版本（Commit）不会保留隧道运行 - 请保持交互式会话打开。
+
+---
+
+## 🛠️ 常见问题排查
+
+### pip 安装时报 `Could not resolve host: github.com`
+
+说明 Kaggle Notebook **没有开启联网** —— Kaggle 默认关闭 Internet：
+
+1. 打开 Notebook 编辑器右侧的 **Settings** 面板
+2. 将 **Internet → ON**（需要已验证手机号的 Kaggle 账号）
+3. 重新运行该 cell：`!pip install git+https://github.com/ctz168/kagglecli.git`
+
+> 💡 注意：通常你**不需要**在 Kaggle 里安装 kagglecli。CLI 装在**本地电脑**；Kaggle 里只需运行 `kaggle_server.ipynb`，它的第一个 cell 会自动安装服务端自身依赖（`flask aitun requests psutil`）。
+
+### CLI 端报 `Connection refused` / 超时
+
+- 检查服务器 URL：由隧道 cell 输出，形如 `https://xxxx.aitun.cc/xxxx`（末尾不要多斜杠）
+- 先执行 `kagglemcp health --url <url>` —— 如果失败，Kaggle 会话可能已结束（CPU 会话最长 **12 小时**，GPU **9 小时**），重新运行服务端 Notebook 即可
+- 确保 Notebook 页面保持打开 —— 保存版本（Commit）**不会**让隧道保持存活
+
+### `--start/--end` 范围似乎不生效
+
+已在 v1.0.0 修复 —— 请确保安装了最新版：`pip install -U git+https://github.com/ctz168/kagglecli.git`。
 
 ---
 
