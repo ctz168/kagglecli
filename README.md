@@ -3,7 +3,7 @@
 [![Open In Kaggle](https://img.shields.io/badge/Open%20in%20Kaggle-20BEFF?logo=kaggle&logoColor=white)](https://www.kaggle.com/code/new)
 [![GitHub](https://img.shields.io/badge/GitHub-ctz168%2Fkagglecli-blue?logo=github)](https://github.com/ctz168/kagglecli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](https://github.com/ctz168/kagglecli)
+[![Version](https://img.shields.io/badge/version-2.2.1-green.svg)](https://github.com/ctz168/kagglecli)
 
 🌐 **English** | [中文](README_zh.md)
 
@@ -774,7 +774,7 @@ fi
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      KaggleCLI v1.0.0                        │
+│                      KaggleCLI v2.2.1                        │
 ├─────────────────────────────────────────────────────────────┤
 │  ┌─────────────┐   ┌─────────────┐   ┌─────────────────┐   │
 │  │   CLI       │   │  Notebook   │   │   Execution     │   │
@@ -832,7 +832,14 @@ Fixed in v1.0.0 — make sure you installed the latest version: `pip install -U 
 
 ---
 
-### v2.2.0 (Latest)
+### v2.2.1 (Latest)
+
+- 🤖 **AGENT envelope guide in the tunnel banner**: when the aitun tunnel is established, the banner now prints the full Samai Command Envelope usage — a ready-to-run envelope example (real URL + runtime-computed CRC32, paste verbatim and expect 42), the envelope format, a one-line envelope builder, and `?respenc=b64url` / `?timeout=` notes; the reconnect "new public URL" line reminds that the envelope channel follows the new URL
+- 📡 **`envelope` field added to the server root `GET /`**: agents probing the root path can also discover the envelope protocol
+- 🚑 **Fixed severe drift in the one-click deployment notebook's writefile cell**: the embedded server was still an old version (missing i18n, envelope, and streaming fixes) — now byte-identical to the server .py
+- 🔖 Version strings unified to 2.2.1
+
+### v2.2.0 
 - 🆕 Added `kagglemcp exec` one-shot command with Samai Command Envelope support — quoting-proof code delivery for AI agents (stdin envelope / `--c64` base64url argv / plain `-c`)
 - 🆕 `/execute` + `/execute_stream` accept an envelope body (CRC32-verified, whitespace-immune base64url payload) as an alternative to JSON
 - 🆕 `?respenc=b64url` on all endpoints — text response fields returned as `*_b64` so the return path through IM/chat gateways stays byte-exact
